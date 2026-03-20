@@ -1,9 +1,12 @@
 /* CSS Reset & Variables */
 :root {
-    --retro-border: #11111b;
-    --retro-panel: #2b2b45;
-    --retro-window: #ffb6c1;
-    --shadow-solid: 6px 6px 0px var(--retro-border);
+    --retro-border: #000000;
+    --retro-panel: #ffffff;
+    --retro-window: #f0f0f0;
+    --retro-text: #101010;
+    --retro-accent: #0057d9;
+    --retro-btn: #4a90e2;
+    --shadow-solid: 5px 5px 0px var(--retro-border);
 }
 
 /* Base Pixel Arts */
@@ -20,12 +23,10 @@
     box-shadow: 1px 1px 0px var(--retro-border);
 }
 
-/* Background Aesthetics (Lofi Evening Starscape) */
+/* Background Aesthetics (High-Contrast Retro) */
 .pixel-bg {
-    background-color: #1e1e2e;
-    background-image: 
-        radial-gradient(circle at 15% 50%, rgba(203, 170, 203, 0.08), transparent 25%),
-        radial-gradient(circle at 85% 30%, rgba(249, 226, 175, 0.05), transparent 25%);
+    background-color: #fcfcfc;
+    background-image: none;
     background-size: cover;
     background-position: center;
 }
@@ -39,10 +40,11 @@
     left: 0;
     bottom: 0;
     right: 0;
-    background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background: linear-gradient(rgba(0, 0, 0, 0.05) 50%, rgba(255, 255, 255, 0.05) 50%);
     z-index: 999;
-    background-size: 100% 4px, 6px 100%;
+    background-size: 100% 8px;
     pointer-events: none;
+    opacity: 0.35;
 }
 
 /* Chat bubble aesthetics */
@@ -51,17 +53,17 @@
 }
 
 .bubble-ai {
-    background-color: #f8f8f2;
-    color: #11111b;
-    border: 3px solid #11111b;
-    box-shadow: 4px 4px 0px #11111b;
+    background-color: #ffffff;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: 4px 4px 0px #000000;
 }
 
 .bubble-user {
-    background-color: #cbaacb;
-    color: #11111b;
-    border: 3px solid #11111b;
-    box-shadow: -4px 4px 0px #11111b;
+    background-color: #e5f3ff;
+    color: #000000;
+    border: 3px solid #000000;
+    box-shadow: -4px 4px 0px #000000;
 }
 
 /* Scrollbars - Retro Blocky */
@@ -112,7 +114,51 @@ input[type=range].pixel-range::-webkit-slider-runnable-track {
 
 /* Map Overrides for LoFi / Pixel look */
 .retro-map-filter {
-    filter: sepia(0.6) hue-rotate(290deg) contrast(1.2) saturate(1.5);
+    filter: none;
+    background: linear-gradient(180deg, rgba(255,255,255,0.06), rgba(0,0,0,0.2));
+}
+
+#map-wrapper {
+    transition: filter 0.4s ease;
+}
+
+#map-wrapper.light-mode {
+    filter: brightness(1.15) saturate(1.1);
+}
+
+#map-wrapper.dark-mode {
+    filter: brightness(0.92) saturate(0.95);
+}
+
+#map-search:focus {
+    outline: 2px solid #f9e2af;
+}
+
+body.high-contrast {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+}
+
+body.high-contrast .pixel-bg {
+    background: #ffffff !important;
+}
+
+body.high-contrast .pixel-window-header,
+body.high-contrast .retro-active,
+body.high-contrast .bg-retro-panel,
+body.high-contrast .bg-retro-window {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border-color: #000000 !important;
+}
+
+body.high-contrast .bubble-ai,
+body.high-contrast .bubble-user,
+body.high-contrast .result-card {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    border: 3px solid #000000 !important;
+    box-shadow: 4px 4px 0px #000000 !important;
 }
 
 .leaflet-popup-content-wrapper {
