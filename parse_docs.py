@@ -23,5 +23,5 @@ def read_docx(path):
         print(f"Error reading {path}: {e}")
     print("\n")
 
-for docx_file in glob.glob('d:/Third Place Finder/Docs/*.docx'):
+for docx_file in glob.glob('d:/Third-Place-Finder-Web/Docs/*.docx'):
     read_docx(docx_file)

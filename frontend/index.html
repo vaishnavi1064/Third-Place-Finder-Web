@@ -39,10 +39,10 @@
 </head>
 <body class="bg-retro-bg text-retro-text h-screen w-screen overflow-hidden relative pixel-bg crt selection:bg-retro-accent selection:text-retro-border">
 
-    <div class="h-full w-full flex flex-col md:flex-row relative z-10 p-2 md:p-6 gap-6 max-w-screen-2xl mx-auto items-stretch">
+    <div class="h-full w-full flex flex-col md:flex-row relative z-10 gap-6 items-stretch">
         
         <!-- Left Pane: Chat Window -->
-        <div class="w-full md:w-[450px] flex flex-col h-[50vh] md:h-full shrink-0">
+        <div id="left-pane" class="w-full md:w-[450px] flex flex-col h-[50vh] md:h-full shrink-0 relative transition-[width] duration-0">
             <!-- Window Header -->
             <header class="pixel-window-header bg-retro-panel p-3 border-b-4 border-retro-border flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -81,6 +81,11 @@
             </div>
         </div>
 
+        <!-- Vertical Resizer 1 (Left/Middle) -->
+        <div id="resizer-left" class="hidden md:flex w-4 cursor-col-resize items-center justify-center -mx-4 z-20 group">
+            <div class="h-16 w-full max-w-[4px] bg-retro-border/20 group-hover:bg-retro-border/80 rounded transition-all"></div>
+        </div>
+
         <!-- Middle Pane: Map & Results -->
         <div class="flex-1 flex flex-col h-[50vh] md:h-full gap-6 relative">
             <!-- Map Window -->
@@ -116,8 +121,13 @@
             </div>
         </div>
 
+        <!-- Vertical Resizer 2 (Middle/Right) -->
+        <div id="resizer-right" class="hidden md:flex w-4 cursor-col-resize items-center justify-center -mx-4 z-20 group">
+            <div class="h-16 w-full max-w-[4px] bg-retro-border/20 group-hover:bg-retro-border/80 rounded transition-all"></div>
+        </div>
+
         <!-- Right Pane: Virtual Cafe Mixer -->
-        <div class="w-full md:w-[320px] flex flex-col h-auto md:h-full shrink-0 pixel-shadow border-4 border-retro-border bg-retro-panel">
+        <div id="right-pane" class="w-full md:w-[320px] flex flex-col h-auto md:h-full shrink-0 pixel-shadow border-4 border-retro-border bg-retro-panel relative transition-[width] duration-0">
             <header class="bg-retro-bg p-3 border-b-4 border-retro-border text-center">
                 <h2 class="text-sm font-title text-[#a2e4b8] mt-1">VIRTUAL CAFE MIXER</h2>
             </header>
@@ -138,7 +148,7 @@
                     <input type="range" id="vol-music" class="pixel-range flex-1" min="0" max="1" step="0.05" value="0.5">
                 </div>
                 <audio id="audio-music" loop>
-                    <source src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=lofi-study-112191.mp3" type="audio/mpeg">
+                    <source src="sounds/music.mp3" type="audio/mpeg">
                 </audio>
             </div>
 
@@ -151,7 +161,7 @@
                     </div>
                     <input type="range" id="vol-rain" class="pixel-range w-full" min="0" max="1" step="0.05" value="0">
                     <audio id="audio-rain" loop>
-                        <source src="https://cdn.pixabay.com/download/audio/2021/08/04/audio_349d9c24df.mp3?filename=heavy-rain-nature-sounds-8186.mp3" type="audio/mpeg">
+                        <source src="sounds/rain.mp3" type="audio/mpeg">
                     </audio>
                 </div>
 
@@ -161,7 +171,7 @@
                     </div>
                     <input type="range" id="vol-chatter" class="pixel-range w-full" min="0" max="1" step="0.05" value="0">
                     <audio id="audio-chatter" loop>
-                        <source src="https://cdn.pixabay.com/download/audio/2022/10/25/audio_1167909c8d.mp3?filename=restaurant-ambience-124115.mp3" type="audio/mpeg">
+                        <source src="sounds/chatter.mp3" type="audio/mpeg">
                     </audio>
                 </div>
 
@@ -171,7 +181,7 @@
                     </div>
                     <input type="range" id="vol-fire" class="pixel-range w-full" min="0" max="1" step="0.05" value="0">
                     <audio id="audio-fire" loop>
-                        <source src="https://cdn.pixabay.com/download/audio/2022/02/07/audio_4960309e3e.mp3?filename=crackling-fireplace-nature-sounds-8012.mp3" type="audio/mpeg">
+                        <source src="sounds/fire.mp3" type="audio/mpeg">
                     </audio>
                 </div>
                 
@@ -181,7 +191,7 @@
                     </div>
                     <input type="range" id="vol-street" class="pixel-range w-full" min="0" max="1" step="0.05" value="0">
                     <audio id="audio-street" loop>
-                        <source src="https://cdn.pixabay.com/download/audio/2022/01/18/audio_24a2ef1fb1.mp3?filename=city-traffic-outdoor-6414.mp3" type="audio/mpeg">
+                        <source src="sounds/street.mp3" type="audio/mpeg">
                     </audio>
                 </div>
             </div>

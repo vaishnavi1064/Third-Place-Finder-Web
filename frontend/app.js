@@ -174,6 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initMap();
     startChat();
     initVirtualCafe();
+    initResizers();
 
     chatForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -239,8 +240,8 @@ function initMap() {
         attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20
     });
 
-    lightLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; CARTO', subdomains: 'abcd', maxZoom: 20
+    lightLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors', maxZoom: 19
     });
 
     lightLayer.addTo(map);
@@ -765,4 +766,62 @@ function renderResultCards(venues) {
 
 function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+// --- Resizer Logic ---
+function initResizers() {
+    const leftPane = document.getElementById('left-pane');
+    const rightPane = document.getElementById('right-pane');
+    const resizerLeft = document.getElementById('resizer-left');
+    const resizerRight = document.getElementById('resizer-right');
+
+    let isResizingLeft = false;
+    let isResizingRight = false;
+
+    if (!resizerLeft || !resizerRight) return;
+
+    resizerLeft.addEventListener('mousedown', (e) => {
+        isResizingLeft = true;
+        document.body.style.cursor = 'col-resize';
+        document.getElementById('map').style.pointerEvents = 'none';
+        e.preventDefault();
+    });
+
+    resizerRight.addEventListener('mousedown', (e) => {
+        isResizingRight = true;
+        document.body.style.cursor = 'col-resize';
+        document.getElementById('map').style.pointerEvents = 'none';
+        e.preventDefault();
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (!isResizingLeft && !isResizingRight) return;
+
+        if (isResizingLeft) {
+            const newWidth = Math.max(300, Math.min(800, e.clientX));
+            leftPane.style.width = newWidth + 'px';
+        } else if (isResizingRight) {
+            const newWidth = Math.max(250, Math.min(600, window.innerWidth - e.clientX));
+            rightPane.style.width = newWidth + 'px';
+        }
+        
+        if (map) map.invalidateSize();
+    });
+
+    window.addEventListener('mouseup', () => {
+        if (isResizingLeft || isResizingRight) {
+            isResizingLeft = false;
+            isResizingRight = false;
+            document.body.style.cursor = '';
+            document.getElementById('map').style.pointerEvents = '';
+            if (map) map.invalidateSize();
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth < 768) {
+            leftPane.style.width = '';
+            rightPane.style.width = '';
+        }
+    });
 }
