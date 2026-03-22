@@ -90,26 +90,34 @@
 /* Pixel Range Sliders */
 input[type=range].pixel-range {
     -webkit-appearance: none;
+    appearance: none;
     width: 100%;
     background: transparent;
-    height: 24px;
+    height: 38px; /* Allow enough room for massive knobs */
 }
 input[type=range].pixel-range::-webkit-slider-thumb {
     -webkit-appearance: none;
-    height: 20px;
-    width: 12px;
-    background: #f8f8f2;
-    border: 3px solid #11111b;
-    cursor: pointer;
-    margin-top: -6px;
-    box-shadow: 2px 2px 0 #11111b;
+    appearance: none;
+    height: 38px;
+    width: 24px;   
+    background: #ffb6c1;
+    border: 4px solid #11111b;
+    cursor: grab;
+    margin-top: -15px; /* Aligns the heavy block to the middle of the track slit */
+    box-shadow: inset -2px -2px 0px rgba(0,0,0,0.4), 3px 3px 0px #11111b;
+    border-radius: 2px;
+}
+input[type=range].pixel-range:active::-webkit-slider-thumb {
+    background: #f9e2af;
+    cursor: grabbing;
 }
 input[type=range].pixel-range::-webkit-slider-runnable-track {
     width: 100%;
     height: 8px;
     cursor: pointer;
-    background: #11111b;
-    border: 2px solid #11111b;
+    background: #000000;
+    border: 2px solid #5a5a5a;
+    box-shadow: inset 1px 1px 3px rgba(0,0,0,0.8);
 }
 
 /* Map Overrides for LoFi / Pixel look */

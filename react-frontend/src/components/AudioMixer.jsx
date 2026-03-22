@@ -38,7 +38,7 @@ export default function AudioMixer() {
   return (
     <>
       <header className="bg-retro-bg p-3 border-b-4 border-retro-border text-center">
-        <h2 className="text-sm font-title text-[#a2e4b8] mt-1">VIRTUAL CAFE MIXER</h2>
+        <h2 className="text-sm font-title text-[#a2e4b8] mt-1 tracking-widest">MUSIC BLENDER</h2>
       </header>
       
       {/* Lo-Fi Music Player */}
@@ -68,7 +68,7 @@ export default function AudioMixer() {
           />
         </div>
         <audio ref={musicRef} loop>
-          <source src="/sounds/music.mp3" type="audio/mpeg" />
+          <source src="https://stream.zeno.fm/f3wvbbqmdg8uv" type="audio/mpeg" />
         </audio>
       </div>
 
@@ -80,7 +80,7 @@ export default function AudioMixer() {
             <span className="text-xl text-[#ffb6c1]">🌧️ Rain</span>
           </div>
           <input type="range" className="pixel-range w-full" min="0" max="1" step="0.05" defaultValue="0" onChange={(e) => handleAudioSlider(e, rainRef)} />
-          <audio ref={rainRef} loop><source src="/sounds/rain.mp3" type="audio/mpeg" /></audio>
+          <audio ref={rainRef} loop><source src="https://actions.google.com/sounds/v1/water/rain_on_roof.ogg" type="audio/ogg" /></audio>
         </div>
 
         <div className="ambient-control">
@@ -88,7 +88,7 @@ export default function AudioMixer() {
             <span className="text-xl text-[#f9e2af]">☕ Cafe Chatter</span>
           </div>
           <input type="range" className="pixel-range w-full" min="0" max="1" step="0.05" defaultValue="0" onChange={(e) => handleAudioSlider(e, chatterRef)} />
-          <audio ref={chatterRef} loop><source src="/sounds/chatter.mp3" type="audio/mpeg" /></audio>
+          <audio ref={chatterRef} loop><source src="https://actions.google.com/sounds/v1/crowds/restaurant_chatter.ogg" type="audio/ogg" /></audio>
         </div>
 
         <div className="ambient-control">
@@ -96,15 +96,15 @@ export default function AudioMixer() {
             <span className="text-xl text-[#a2e4b8]">🔥 Fireplace</span>
           </div>
           <input type="range" className="pixel-range w-full" min="0" max="1" step="0.05" defaultValue="0" onChange={(e) => handleAudioSlider(e, fireRef)} />
-          <audio ref={fireRef} loop><source src="/sounds/fire.mp3" type="audio/mpeg" /></audio>
+          <audio ref={fireRef} loop><source src="https://actions.google.com/sounds/v1/foley/fireplace_crackling.ogg" type="audio/ogg" /></audio>
         </div>
         
-        <div className="ambient-control">
+        <div className="ambient-control pb-8">
           <div className="flex justify-between items-end mb-1">
             <span className="text-xl text-[#cbaacb]">🌃 Street Ambience</span>
           </div>
           <input type="range" className="pixel-range w-full" min="0" max="1" step="0.05" defaultValue="0" onChange={(e) => handleAudioSlider(e, streetRef)} />
-          <audio ref={streetRef} loop><source src="/sounds/street.mp3" type="audio/mpeg" /></audio>
+          <audio ref={streetRef} loop><source src="https://actions.google.com/sounds/v1/traffic/city_traffic_and_people.ogg" type="audio/ogg" /></audio>
         </div>
       </div>
     </>

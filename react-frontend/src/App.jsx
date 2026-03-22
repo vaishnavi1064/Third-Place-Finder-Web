@@ -4,9 +4,8 @@ import MapViewer from './components/MapViewer';
 import AudioMixer from './components/AudioMixer';
 
 function App() {
-  const [centerWidth, setCenterWidth] = useState('45%');
-  const [leftWidth, setLeftWidth] = useState('30%');
-  const [rightWidth, setRightWidth] = useState('25%'); // Assuming rightWidth also becomes percentage-based
+  const [leftWidth, setLeftWidth] = useState('25%');
+  const [rightWidth, setRightWidth] = useState('20%');
   const [showResults, setShowResults] = useState(false);
   const [isResizingLeft, setIsResizingLeft] = useState(false);
   const [isResizingRight, setIsResizingRight] = useState(false);
@@ -68,14 +67,14 @@ function App() {
         className="hidden md:flex w-4 cursor-col-resize items-center justify-center -mx-4 z-20 group"
         onMouseDown={(e) => { setIsResizingLeft(true); e.preventDefault(); }}
       >
-        <div className="h-16 w-full max-w-[4px] bg-retro-border/20 group-hover:bg-retro-border/80 rounded transition-all"></div>
+        <div className="h-24 w-2 bg-retro-border group-hover:bg-retro-accent rounded transition-colors shadow-sm"></div>
       </div>
 
       {/* CENTER PANE: MAP */}
       <div
         id="middle-pane"
-        className="flex-shrink-0 relative overflow-hidden flex flex-col h-[50vh] md:h-full"
-        style={{ width: window.innerWidth >= 768 ? centerWidth : '100%', pointerEvents: (isResizingLeft || isResizingRight) ? 'none' : 'auto' }}
+        className="flex-1 relative overflow-hidden flex flex-col h-[50vh] md:h-full min-w-0"
+        style={{ pointerEvents: (isResizingLeft || isResizingRight) ? 'none' : 'auto' }}
       >
         <MapViewer showResults={showResults} />
       </div>
@@ -85,7 +84,7 @@ function App() {
         className="hidden md:flex w-4 cursor-col-resize items-center justify-center -mx-4 z-20 group"
         onMouseDown={(e) => { setIsResizingRight(true); e.preventDefault(); }}
       >
-        <div className="h-16 w-full max-w-[4px] bg-retro-border/20 group-hover:bg-retro-border/80 rounded transition-all"></div>
+        <div className="h-24 w-2 bg-retro-border group-hover:bg-retro-accent rounded transition-colors shadow-sm"></div>
       </div>
 
       {/* Right Pane */}
