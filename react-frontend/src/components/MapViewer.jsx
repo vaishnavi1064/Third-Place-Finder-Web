@@ -145,8 +145,8 @@ export default function MapViewer({ showResults }) {
 
   return (
     <div className="h-full w-full flex flex-col">
-      <header className="bg-retro-panel p-2 border-b-4 border-retro-border flex items-center justify-between z-10 shrink-0">
-        <h2 className="text-sm font-title text-retro-window mt-1">MAP_VIEWER.SYS (LIVE SECURE LINK)</h2>
+      <header className="bg-retro-bg p-3 border-b-4 border-retro-border flex items-center justify-between z-10 relative shadow-md">
+        <h2 className="text-sm font-title text-[#ffb6c1] mt-1 tracking-widest whitespace-nowrap overflow-hidden text-ellipsis mr-4">Map view</h2>
       </header>
       
       <div className="flex-1 flex flex-col relative overflow-hidden retro-map-filter bg-retro-bg" id="map-wrapper">
