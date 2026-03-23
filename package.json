@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Agentic AI Spot Scout and Cafe Mixer",
   "scripts": {
-    "start": "concurrently \"cd backend && node server.js\" \"cd react-frontend && npm run dev -- --force\""
+    "start": "concurrently \"cd backend && node server.js\" \"cd frontend && npm run dev -- --force\""
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

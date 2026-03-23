@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Send, RefreshCw } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { ScrollArea } from "./ui/scroll-area";
+import { useMap } from "../context/MapContext";
 
 interface Message {
   id: string;
@@ -22,12 +22,15 @@ const QUESTIONS = [
 const API_BASE = "http://127.0.0.1:3000";
 
 export function ChatBox() {
+  const { triggerFetch } = useMap();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
   const [options, setOptions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOnboarding, setIsOnboarding] = useState(true);
+  // Accumulate answers: { noise: "SILENCE (LIBRARY)", group_size: "SOLO", ... }
+  const answersRef = useRef<Record<string, string>>({});
   const scrollRef = useRef<HTMLDivElement>(null);
   const sessionStartedRef = useRef(false);
 
@@ -51,14 +54,30 @@ export function ChatBox() {
 
   const askQuestion = (step: number) => {
     if (step >= QUESTIONS.length) {
-      setIsOnboarding(false);
-      setOptions([]);
-      sendToGemini('The user has finished onboarding. Greet them, summarize their preferences, and offer to help find a spot. Keep it short and punchy retro style.', true);
+      finishOnboarding();
       return;
     }
     const q = QUESTIONS[step];
     addMessage(q.text, "ai");
     setOptions(q.options);
+  };
+
+  const finishOnboarding = async () => {
+    setIsOnboarding(false);
+    setOptions([]);
+
+    // Build a rich summary of all collected preferences
+    const answers = answersRef.current;
+    const summary = Object.entries(answers)
+      .map(([key, val]) => `${key.replace('_', ' ').toUpperCase()}: ${val}`)
+      .join(', ');
+
+    const prompt = `User preferences collected: ${summary}. Greet them, briefly summarize these preferences in your retro style, and tell them you are now initiating the spot search scan.`;
+
+    await sendToGemini(prompt, true);
+
+    // Trigger the venue fetch now that onboarding is done
+    triggerFetch();
   };
 
   const sendToGemini = async (message: string, reset = false) => {
@@ -81,9 +100,18 @@ export function ChatBox() {
   const handleOptionClick = (option: string) => {
     addMessage(option, "user");
     setOptions([]);
+
+    // Save the answer for this question
+    const q = QUESTIONS[currentStep];
+    answersRef.current[q.id] = option;
+
+    // Send the answer to Gemini so session history builds up
+    sendToGemini(`My answer for "${q.text}" is: ${option}. Acknowledge briefly in 1 sentence, retro style.`);
+
     const nextStep = currentStep + 1;
     setCurrentStep(nextStep);
-    setTimeout(() => askQuestion(nextStep), 300);
+    // Wait a moment so Gemini reply arrives before next question appears
+    setTimeout(() => askQuestion(nextStep), 1200);
   };
 
   const handleSend = () => {
@@ -104,6 +132,7 @@ export function ChatBox() {
     setOptions([]);
     setIsOnboarding(true);
     setIsLoading(false);
+    answersRef.current = {};
     sessionStartedRef.current = false;
     setTimeout(() => {
       sessionStartedRef.current = true;
