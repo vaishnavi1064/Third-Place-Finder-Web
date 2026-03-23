@@ -6,69 +6,73 @@
 ---
 
 ## ☕ What is it?
-**Third Place Finder** is a unique web application built for students, remote workers, and deep-focus seekers. It serves a dual purpose:
-1. **The Spot Scout (Map):** Guides you to your ideal physical "Third Place" (café, library, or co-working space in Seattle) via a 5-step conversational AI onboarding flow.
-2. **The Virtual Cafe (Mixer):** For when you can't leave home. Directly embedded into the app is a full-featured ambient sound mixer to synthesize the perfect background noise for studying.
+**Third Place Finder** is a feature-rich web app for deep-focus people and study groups looking for their ideal Seattle third place (café, library, coffee shop) plus virtual lo-fi ambience when staying in.
 
-The entire project is wrapped in a stunning, cozy **Pastel Pixel-Art & Lo-Fi sunset aesthetic**. 
+## ✨ New Features (Latest)
+- **Seattle Live Map Mode**: `fetchSeattlePlacesOverpass()` pulls OpenStreetMap data for Seattle (
+amenities: cafe, library, coffee shop) and displays dozens of live options.
+- **Google Places optional path**: Set `GOOGLE_PLACES_API_KEY` in `frontend/app.js` to use real-time Google Places and reviews.
+- **Match preferences to the map**: `matchVenuesToPreferences(venues, userPrefs)` filters live results based on chat input (noise, group, outlets, caffeine, time).
+- **Study Buddy Chat Flow**:
+  - set up with onboarding questions
+  - then interactive chat mode with options: `RECOMMEND QUIET SPOTS`, `FIND PLACES WITH OUTLETS`, `SHOW MOST RATED`, etc.
+  - responder provides curated quick options + cards
+- **Full card detail + interaction**:
+  - `REVIEWS` button (Google mode) fetches place details and shows up to 3 reviews
+  - `NAVIGATE` button opens Google Maps directions (from user location to selected spot)
+  - location details and reason text appear in cards
+- **High-contrast mode toggle**:
+  - user interface accessibility toggle for better readability.
 
-## ✨ Features
-- **Conversational Onboarding:** A retro chat interface that discovers your vibe (Noise tolerance, Group Size, Outlets, Caffeine needs). 
-- **Virtual Cafe Ambient Mixer:** A side-panel filled with pixel-art sliders controlling looping HTML5 audio for:
-  - 🌧️ Rain & Thunder
-  - 🗣️ Cafe Chatter
-  - 🔥 Crackling Fireplace
-  - 🏙️ Street Ambience
-- **Lo-Fi Music Player:** Built-in chilling lo-fi jazz beats to act as a bed track over your ambient noise.
-- **Leaflet Map Integration:** Plots your targeted locations natively using OpenStreetMap & CartoDB tiles with a custom retro CSS overlay.
-- **Ultra Lightweight:** The entire application runs natively in the browser using CDNs. No installation delays!
+## 🛠️ Getting Started
+### 1. Clone repository
+```bash
+git clone https://github.com/shravanibnikam/Third-Place-Finder-Web.git
+cd "Third Place Finder"/frontend
+```
 
-## ⚙️ How It Works (Under the Hood)
-The core logic of the application lives in `app.js` and is broken down into three main systems:
+### 2. Open in browser (recommended Live Server)
+- Option A: plain file `index.html` (works, but geolocation & CORS may vary)
+- Option B: start local server:
+  - `python -m http.server 8000`
+  - open `http://127.0.0.1:8000`
 
-### 1. The Conversational State Machine
-The retro chat interface isn't connecting to a real AI backend yet—it's a deterministic state machine!
-- A `questions` array holds the rigidly defined 5 onboarding steps (Noise, Group, Time, Outlets, Caffeine).
-- `handleUserResponse()` captures your clicked answer, saves it to a global `userPrefs` object, and increments the `currentStep`.
-- A dynamic `setTimeout`-based typing indicator function simulates AI "processing" time to make the retro bot feel alive and engaging.
+### 3. Optional: Add Google Places API key for review mode
+1. In `frontend/app.js`, set:
+   - `const GOOGLE_PLACES_API_KEY = "YOUR_KEY";`
+   - `const GOOGLE_PLACES_ENABLED = Boolean(GOOGLE_PLACES_API_KEY);`
+2. Without key: app uses OSM Overpass and mock fallback.
 
-### 2. Map & Mock Backend Integration
-When the final chat onboarding question completes (`finishOnboarding()`):
-- A fake network latency period simulates querying an external geographic dataset.
-- The `renderMapPins()` function uses Leaflet's `L.divIcon` to replace standard map dots with custom HTML pixel-art markers (a chunky 'X') at specific lat/lng coordinates.
-- The map mathematically bounds and scales itself (`map.fitBounds`) to ensure all 3 result pins are instantly visible in the viewport.
+## ▶️ Usage Flow
+1. Open app, complete onboarding conversation.
+2. Map unlocks, results loaded from OSM/Google or fallback mock.
+3. Click recommended cards to fly map.
+4. Use `NAVIGATE` to open real directions.
+5. Use `REVIEWS` when available.
+6. Use chat queries or quick actions for dynamic matching.
 
-### 3. The Virtual Cafe Audio Engine
-The right-hand panel orchestrates multiple overlapping HTML5 `<audio>` elements simultaneously:
-- Each ambient slider (`<input type="range">`) is bound to an event listener initialized in `initVirtualCafe()`.
-- When you drag a slider, it immediately maps your range value (`0` to `1`) to that specific track's `.volume` property.
-- A smart toggle algorithm ensures tracks are paused when volume is at `0` to save on CPU resources, and dynamically `play()` when dragging up, cleanly dodging rigid browser autoplay-blocking policies.
+## 🗂️ Key file summary
+- `frontend/index.html`: UI layout and controls
+- `frontend/style.css`: retro theme + contrast improvements
+- `frontend/app.js`: all logic
+  - chat, onboarding, map, venue fetch, matching, details, routing
 
-## 🛠️ Tech Stack
-This project was architected for maximum speed and absolute zero setup friction.
-- **HTML5 & Vanilla JavaScript** (Zero complex component lifecycles)
-- **Tailwind CSS** (Loaded via CDN for rapid atomic styling)
-- **Leaflet.js** (For the interactive map and retro custom pins)
-- **CSS Animations & Glassmorph/Pixel Tooling** (Scanlines, chunky drop shadows, CRT filters)
+## ✅ Commit
+Final feature commit in this branch:
+- `feat: add Seattle Overpass and Google Places live matching with study-buddy chat`
 
-## 🚀 How to Run locally
-Because the app relies completely on Content Delivery Networks (CDNs) and native web APIs, there is **zero installation required**.
-No `npm install`, no backend setup, no Node.js needed.
+## 🚀 Run this right now
+1. Start local server:
+   `cd frontend` + `python -m http.server 8000`
+2. `http://127.0.0.1:8000`
+3. Optionally, install Live Server extension for VS Code.
 
-1. Clone or download this repository.
-2. Navigate to the `frontend/` folder.
-3. Double click on `index.html` to open it in your default web browser!
-
-*(Note: Audio tracks may require you to interact with the webpage first—like clicking a slider or the play button—due to modern browser Autoplay policies).*
-
-## 🎨 Inspiration & Design
-Our design was heavily inspired by the cozy productivity tool *"Virtual Cafe by Flocus"* and the pastel pixel-art charm of retro indie games like *"Sweets Kitty"*. We merged these ideas to create an atmosphere that feels simultaneously nostalgic, warm, and highly functional. 
-
-**Color Palette:**
-- 🌌 Deep Midnight Purple (`#1e1e2e`)
-- 🌸 Pastel Neon Pink (`#ffb6c1`)
-- 🌙 Cozy Sunset Yellow (`#f9e2af`)
-- 🍵 Mint Accent (`#a2e4b8`)
+## 🧩 Notes
+- Overpass has rate limits; local reload may sometimes delay.
+- Google Places API in browser may require proxy to avoid CORS.
+- 'NAVIGATE' opens Google Maps external site.
+- UI is retro and intentionally pixel-art oriented.
 
 ---
-*Created during the Emerald Forge Hackathon 2025. Seattle, WA.*
+Made to be fully functional in one edit with the user’s priorities:
+live data, full details, related comfortable chitchat, route action, and accessibility.
