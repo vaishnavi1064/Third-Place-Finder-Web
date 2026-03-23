@@ -105,13 +105,9 @@ export function ChatBox() {
     const q = QUESTIONS[currentStep];
     answersRef.current[q.id] = option;
 
-    // Send the answer to Gemini so session history builds up
-    sendToGemini(`My answer for "${q.text}" is: ${option}. Acknowledge briefly in 1 sentence, retro style.`);
-
     const nextStep = currentStep + 1;
     setCurrentStep(nextStep);
-    // Wait a moment so Gemini reply arrives before next question appears
-    setTimeout(() => askQuestion(nextStep), 1200);
+    setTimeout(() => askQuestion(nextStep), 400);
   };
 
   const handleSend = () => {
