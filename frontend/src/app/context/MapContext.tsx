@@ -10,6 +10,7 @@ export interface Venue {
   reason: string;
   rating: string | number;
   address: string;
+  why?: string;
 }
 
 interface MapContextType {
@@ -29,7 +30,7 @@ interface MapContextType {
   showOnlyFavorites: boolean;
   setShowOnlyFavorites: (v: boolean) => void;
   routeToVenue: (venue: Venue) => void;
-  triggerFetch: () => void; // called externally after onboarding
+  triggerFetch: (preferences: Record<string, string>) => void;
   hasSearched: boolean;
 }
 
@@ -50,7 +51,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const [hasSearched, setHasSearched] = useState(false);
   const locationRef = useRef<[number, number] | null>(null);
 
-  // Resolve & cache user location on mount (for map centering), but don't fetch venues yet
+  // Resolve user location on mount for map centering
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -68,26 +69,26 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const fetchVenues = async (lat: number, lon: number) => {
+  // Called by ChatBox after onboarding with user preferences
+  const triggerFetch = useCallback(async (preferences: Record<string, string>) => {
+    const [lat, lon] = locationRef.current || [47.615, -122.33];
     setIsLoading(true);
     setHasSearched(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE}/api/cafes?lat=${lat}&lon=${lon}`);
+      const res = await fetch(`${API_BASE}/api/recommend`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences, lat, lon }),
+      });
       if (!res.ok) throw new Error('API error');
       const data: Venue[] = await res.json();
       setVenues(data);
     } catch {
-      setError('Could not load venues. Is the backend running on port 3000?');
+      setError('Could not load recommendations. Is the backend running?');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  // Called by ChatBox after onboarding completes
-  const triggerFetch = useCallback(() => {
-    const loc = locationRef.current || [47.615, -122.33];
-    fetchVenues(loc[0], loc[1]);
   }, []);
 
   const toggleFavorite = (id: string | number) => {
@@ -101,8 +102,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const routeToVenue = (venue: Venue) => {
     const [lat, lon] = venue.coords;
     const origin = userLocation ? `${userLocation[0]},${userLocation[1]}` : '';
-    const url = `https://www.google.com/maps/dir/${origin}/${lat},${lon}/`;
-    window.open(url, '_blank');
+    window.open(`https://www.google.com/maps/dir/${origin}/${lat},${lon}/`, '_blank');
   };
 
   const filteredVenues = venues.filter(v => {
@@ -113,24 +113,11 @@ export function MapProvider({ children }: { children: ReactNode }) {
 
   return (
     <MapContext.Provider value={{
-      venues,
-      filteredVenues,
-      selectedVenue,
-      setSelectedVenue,
-      favorites,
-      toggleFavorite,
-      flyTo,
-      setFlyTo,
-      userLocation,
-      isLoading,
-      error,
-      searchQuery,
-      setSearchQuery,
-      showOnlyFavorites,
-      setShowOnlyFavorites,
-      routeToVenue,
-      triggerFetch,
-      hasSearched,
+      venues, filteredVenues, selectedVenue, setSelectedVenue,
+      favorites, toggleFavorite, flyTo, setFlyTo, userLocation,
+      isLoading, error, searchQuery, setSearchQuery,
+      showOnlyFavorites, setShowOnlyFavorites, routeToVenue,
+      triggerFetch, hasSearched,
     }}>
       {children}
     </MapContext.Provider>

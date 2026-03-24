@@ -77,7 +77,7 @@ export function ChatBox() {
     await sendToGemini(prompt, true);
 
     // Trigger the venue fetch now that onboarding is done
-    triggerFetch();
+    triggerFetch(answersRef.current);
   };
 
   const sendToGemini = async (message: string, reset = false) => {
