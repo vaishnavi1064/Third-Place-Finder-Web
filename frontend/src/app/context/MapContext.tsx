@@ -81,11 +81,14 @@ export function MapProvider({ children }: { children: ReactNode }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ preferences, lat, lon }),
       });
-      if (!res.ok) throw new Error('API error');
+      if (!res.ok) {
+        const errData = await res.json().catch(() => null);
+        throw new Error(errData?.detail || errData?.error || 'Unknown API error');
+      }
       const data: Venue[] = await res.json();
       setVenues(data);
-    } catch {
-      setError('Could not load recommendations. Is the backend running?');
+    } catch (err: any) {
+      setError(`Backend Error: ${err.message || 'Could not connect'}`);
     } finally {
       setIsLoading(false);
     }

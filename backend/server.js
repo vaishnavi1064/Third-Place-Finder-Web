@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Groq = require('groq-sdk');
 
 dotenv.config();
 
@@ -11,32 +12,61 @@ app.use(express.json());
 
 const PORT = 3000;
 
-// ── Gemini setup ──────────────────────────────────────────────────────────────
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+// ── Groq setup ──────────────────────────────────────────────────────────────
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groqModel = "llama-3.3-70b-versatile";
+const systemInstruction = "You are 'THIRD_PLACE.EXE' — a retro terminal AI assistant. Your PRIMARY mission is helping users find coffee shops, cafes, libraries, and study spots. But you are also a fully capable general assistant: you can answer questions about this app/platform (how to use the map, filters, Pomodoro timer, ambient sounds, etc.), study-related questions (explaining concepts, summarizing topics, helping with homework), and general knowledge questions (science, tech, culture, anything). Always respond in short, punchy, retro terminal uppercase style. Be robotic but genuinely helpful. Keep responses concise — 2-4 sentences max unless a detailed answer is needed.";
 
-// Chat model — for the Spot Scout chatbot conversation
-const chatModel = genAI.getGenerativeModel({
-    model: "gemini-2.0-flash",
-    systemInstruction: "You are 'THIRD_PLACE.EXE' — a retro terminal AI assistant. Your PRIMARY mission is helping users find coffee shops, cafes, libraries, and study spots. But you are also a fully capable general assistant: you can answer questions about this app/platform (how to use the map, filters, Pomodoro timer, ambient sounds, etc.), study-related questions (explaining concepts, summarizing topics, helping with homework), and general knowledge questions (science, tech, culture, anything). Always respond in short, punchy, retro terminal uppercase style. Be robotic but genuinely helpful. Keep responses concise — 2-4 sentences max unless a detailed answer is needed."
-});
-
-// One-shot model for JSON recommendations (no JSON mode — extract with regex)
-const recommendModel = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+// ── Retry Logic for free-tier 429 & 503 spikes ────────────────────────────────
+async function withRetry(operation, maxRetries = 4, defaultDelayMs = 4000) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            return await operation();
+        } catch (error) {
+            const isOverloaded = error.message?.includes('503') || error.message?.includes('overloaded');
+            const isRateLimited = error.message?.includes('429') || error.message?.includes('quota');
+            
+            if (i === maxRetries - 1 || (!isOverloaded && !isRateLimited)) throw error;
+            
+            let delayToUse = defaultDelayMs;
+            if (isRateLimited) {
+                // Google errors often say "Please retry in 5.5s"
+                const match = error.message?.match(/retry in ([\d\.]+)s/);
+                if (match && match[1]) {
+                    delayToUse = (parseFloat(match[1]) * 1000) + 1000; // wait given time + 1s buffer
+                }
+            }
+            
+            console.log(`[SYS] Groq API blocked (${isRateLimited ? '429 Quota' : '503 Overload'}). Retrying in ${delayToUse / 1000}s... (${i + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, delayToUse));
+        }
+    }
+}
 
 // Holds server-side chat session
-let chatSession = null;
+let chatHistory = [];
 
 // ── /api/chat — Spot Scout chatbot ───────────────────────────────────────────
 app.post('/api/chat', async (req, res) => {
     try {
         const { message, reset } = req.body;
-        if (reset || !chatSession) {
-            chatSession = chatModel.startChat({ history: [] });
+        if (reset || chatHistory.length === 0) {
+            chatHistory = [{ role: "system", content: systemInstruction }];
         }
-        const result = await chatSession.sendMessage(message);
-        res.json({ response: result.response.text() });
+        chatHistory.push({ role: "user", content: message });
+
+        const result = await withRetry(() => groq.chat.completions.create({
+            model: groqModel,
+            messages: chatHistory,
+            max_completion_tokens: 300
+        }));
+        
+        const reply = result.choices[0]?.message?.content || "";
+        chatHistory.push({ role: "assistant", content: reply });
+        
+        res.json({ response: reply });
     } catch (error) {
-        console.error("Gemini Chat Error:", error);
+        console.error("Groq Chat Error:", error);
         res.status(500).json({ error: "COMMLINK FAILURE. CHECK API KEY AND NETWORK." });
     }
 });
@@ -126,12 +156,15 @@ Return ONLY a valid JSON array (no markdown, no explanation) with exactly these 
   }
 ]`;
 
-        const geminiResult = await recommendModel.generateContent(prompt);
-        const rawText = geminiResult.response.text();
+        const groqResult = await withRetry(() => groq.chat.completions.create({
+            model: groqModel,
+            messages: [{ role: "user", content: prompt }]
+        }));
+        const rawText = groqResult.choices[0]?.message?.content || "";
 
         // Extract JSON array robustly (strip markdown code fences if present)
         const jsonMatch = rawText.match(/\[\s*\{[\s\S]*?\}\s*\]/);
-        if (!jsonMatch) throw new Error('No JSON array found in Gemini response');
+        if (!jsonMatch) throw new Error('No JSON array found in Groq response');
         const recommendations = JSON.parse(jsonMatch[0]);
 
         // 4. Map recommendations back to full place objects
