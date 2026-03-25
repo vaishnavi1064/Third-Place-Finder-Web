@@ -1,0 +1,15 @@
+# MySQL Connection
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password_here
+DB_NAME=third_place_finder
+
+# Groq AI (for chat & recommendations)
+GROQ_API_KEY=your_groq_api_key_here
+
+# Geoapify (for place search)
+GEOAPIFY_API_KEY=your_geoapify_api_key_here
+
+# Server
+PORT=3000

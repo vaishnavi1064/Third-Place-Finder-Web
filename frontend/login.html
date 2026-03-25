@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Third Place Finder - Login</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['VT323', 'monospace'],
+                        title: ['Press Start 2P', 'cursive'],
+                    },
+                    colors: {
+                        retro: {
+                            bg: '#1e1e2e',
+                            window: '#ffb6c1',
+                            panel: '#2b2b45',
+                            text: '#f8f8f2',
+                            border: '#11111b',
+                            accent: '#f9e2af',
+                            btn: '#cbaacb'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: #1e1e2e;
+            background-image:
+                radial-gradient(ellipse at 20% 50%, rgba(255,182,193,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 50%, rgba(249,226,175,0.08) 0%, transparent 50%);
+        }
+        .pixel-shadow {
+            box-shadow: 6px 6px 0px #11111b;
+        }
+        .scanline::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.05) 2px,
+                rgba(0,0,0,0.05) 4px
+            );
+            pointer-events: none;
+        }
+        .retro-input {
+            image-rendering: pixelated;
+        }
+        .retro-input:focus {
+            outline: none;
+            border-color: #ffb6c1;
+            box-shadow: 0 0 0 2px rgba(255,182,193,0.3);
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        .cursor-blink::after {
+            content: '_';
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+        .float-anim {
+            animation: float 3s ease-in-out infinite;
+        }
+        .tab-active {
+            background: #ffb6c1;
+            color: #11111b;
+            border-bottom: 4px solid #11111b;
+        }
+        .tab-inactive {
+            background: #2b2b45;
+            color: #f8f8f2;
+            border-bottom: 4px solid transparent;
+        }
+        .tab-inactive:hover {
+            background: #3b3b55;
+        }
+        .status-bar {
+            font-size: 0.7rem;
+            letter-spacing: 0.15em;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 font-sans">
+
+    <div class="w-full max-w-md">
+
+        <!-- Window Frame -->
+        <div class="border-4 border-retro-border pixel-shadow relative scanline">
+
+            <!-- Title Bar -->
+            <div class="bg-retro-panel px-4 py-3 border-b-4 border-retro-border flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">&#x1F47E;</span>
+                    <h1 class="text-[0.7rem] font-title text-retro-accent tracking-widest mt-1">THIRD_PLACE.EXE</h1>
+                </div>
+                <div class="flex gap-2">
+                    <div class="w-4 h-4 bg-retro-window border-2 border-retro-border"></div>
+                    <div class="w-4 h-4 bg-retro-accent border-2 border-retro-border"></div>
+                    <div class="w-4 h-4 bg-red-400 border-2 border-retro-border"></div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="bg-retro-window p-0">
+
+                <!-- Welcome Banner -->
+                <div class="bg-retro-panel p-6 text-center border-b-4 border-retro-border">
+                    <div class="text-5xl mb-3 float-anim inline-block">&#x2615;</div>
+                    <p class="text-2xl text-retro-accent tracking-wide">WELCOME, OPERATOR</p>
+                    <p class="text-lg text-retro-text mt-1 opacity-70">IDENTIFY YOURSELF TO PROCEED</p>
+                </div>
+
+                <!-- Tabs: Login / Sign Up / Guest -->
+                <div class="flex border-b-4 border-retro-border">
+                    <button id="tab-login" onclick="showTab('login')" class="flex-1 py-3 text-xl font-bold border-r-4 border-retro-border tab-active transition-all">
+                        LOGIN
+                    </button>
+                    <button id="tab-signup" onclick="showTab('signup')" class="flex-1 py-3 text-xl font-bold border-r-4 border-retro-border tab-inactive transition-all">
+                        SIGN UP
+                    </button>
+                    <button id="tab-guest" onclick="showTab('guest')" class="flex-1 py-3 text-xl font-bold tab-inactive transition-all">
+                        GUEST
+                    </button>
+                </div>
+
+                <!-- Login Form -->
+                <div id="form-login" class="p-6 space-y-4">
+                    <div>
+                        <label class="text-retro-border text-lg font-bold block mb-1">&gt; USERNAME:</label>
+                        <input type="text" id="login-username" class="retro-input w-full px-3 py-2 bg-retro-bg text-retro-accent border-4 border-retro-border text-xl uppercase" placeholder="ENTER USERNAME...">
+                    </div>
+                    <div>
+                        <label class="text-retro-border text-lg font-bold block mb-1">&gt; PASSWORD:</label>
+                        <input type="password" id="login-password" class="retro-input w-full px-3 py-2 bg-retro-bg text-retro-accent border-4 border-retro-border text-xl" placeholder="ENTER PASSWORD...">
+                    </div>
+                    <div id="login-error" class="text-red-600 text-lg font-bold hidden"></div>
+                    <button onclick="handleLogin()" class="w-full py-3 bg-retro-btn border-4 border-retro-border text-retro-border text-xl font-bold hover:bg-retro-accent transition-all active:translate-y-1 active:shadow-none pixel-shadow">
+                        &#x1F513; AUTHENTICATE
+                    </button>
+                    <p class="text-retro-border text-sm text-center opacity-60">Demo: shravani / demo1234</p>
+                </div>
+
+                <!-- Signup Form -->
+                <div id="form-signup" class="p-6 space-y-4 hidden">
+                    <div>
+                        <label class="text-retro-border text-lg font-bold block mb-1">&gt; CHOOSE USERNAME:</label>
+                        <input type="text" id="signup-username" class="retro-input w-full px-3 py-2 bg-retro-bg text-retro-accent border-4 border-retro-border text-xl uppercase" placeholder="NEW USERNAME...">
+                    </div>
+                    <div>
+                        <label class="text-retro-border text-lg font-bold block mb-1">&gt; EMAIL:</label>
+                        <input type="email" id="signup-email" class="retro-input w-full px-3 py-2 bg-retro-bg text-retro-accent border-4 border-retro-border text-xl" placeholder="YOUR@EMAIL.COM">
+                    </div>
+                    <div>
+                        <label class="text-retro-border text-lg font-bold block mb-1">&gt; SET PASSWORD:</label>
+                        <input type="password" id="signup-password" class="retro-input w-full px-3 py-2 bg-retro-bg text-retro-accent border-4 border-retro-border text-xl" placeholder="MIN 4 CHARS...">
+                    </div>
+                    <div id="signup-error" class="text-red-600 text-lg font-bold hidden"></div>
+                    <div id="signup-success" class="text-green-700 text-lg font-bold hidden"></div>
+                    <button onclick="handleSignup()" class="w-full py-3 bg-[#a2e4b8] border-4 border-retro-border text-retro-border text-xl font-bold hover:bg-green-300 transition-all active:translate-y-1 active:shadow-none pixel-shadow">
+                        &#x1F4BE; CREATE ACCOUNT
+                    </button>
+                </div>
+
+                <!-- Guest Mode -->
+                <div id="form-guest" class="p-6 space-y-4 hidden">
+                    <div class="bg-retro-panel border-4 border-retro-border p-4 text-center">
+                        <p class="text-2xl text-retro-accent mb-2">&#x1F440; BROWSE MODE</p>
+                        <p class="text-lg text-retro-text">You can explore all spots and use the ambient mixer.</p>
+                        <div class="mt-3 p-3 bg-retro-bg border-2 border-retro-accent">
+                            <p class="text-retro-accent text-lg">&#x26A0; FAVORITES DISABLED</p>
+                            <p class="text-retro-text text-sm mt-1">Sign up to save your favorite spots!</p>
+                        </div>
+                    </div>
+                    <button onclick="handleGuest()" class="w-full py-3 bg-retro-accent border-4 border-retro-border text-retro-border text-xl font-bold hover:bg-yellow-200 transition-all active:translate-y-1 active:shadow-none pixel-shadow">
+                        &#x1F680; ENTER AS GUEST
+                    </button>
+                </div>
+
+            </div>
+
+            <!-- Status Bar -->
+            <div class="bg-retro-border px-4 py-2 flex justify-between items-center">
+                <span class="status-bar text-retro-text opacity-50 font-title">V1.0.0</span>
+                <span class="status-bar text-retro-accent opacity-50 font-title cursor-blink">READY</span>
+            </div>
+        </div>
+
+        <p class="text-center text-retro-text opacity-30 mt-4 text-sm font-title">EMERALD FORGE HACKATHON 2025</p>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3000/api';
+
+        function showTab(tab) {
+            // Hide all forms
+            document.getElementById('form-login').classList.add('hidden');
+            document.getElementById('form-signup').classList.add('hidden');
+            document.getElementById('form-guest').classList.add('hidden');
+
+            // Reset tabs
+            document.getElementById('tab-login').className = 'flex-1 py-3 text-xl font-bold border-r-4 border-retro-border tab-inactive transition-all';
+            document.getElementById('tab-signup').className = 'flex-1 py-3 text-xl font-bold border-r-4 border-retro-border tab-inactive transition-all';
+            document.getElementById('tab-guest').className = 'flex-1 py-3 text-xl font-bold tab-inactive transition-all';
+
+            // Show selected
+            document.getElementById(`form-${tab}`).classList.remove('hidden');
+            const tabBtn = document.getElementById(`tab-${tab}`);
+            tabBtn.className = tabBtn.className.replace('tab-inactive', 'tab-active');
+
+            // Clear errors
+            document.querySelectorAll('[id$="-error"]').forEach(el => el.classList.add('hidden'));
+        }
+
+        async function handleLogin() {
+            const username = document.getElementById('login-username').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+
+            if (!username || !password) {
+                errorEl.textContent = 'ERROR: ALL FIELDS REQUIRED';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username.toLowerCase(), password })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    errorEl.textContent = `ERROR: ${data.error.toUpperCase()}`;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                // Save user info and redirect
+                localStorage.setItem('thirdplace_user', JSON.stringify(data.user));
+                window.location.href = 'index.html';
+            } catch (err) {
+                errorEl.textContent = 'ERROR: SERVER OFFLINE. START BACKEND FIRST.';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        async function handleSignup() {
+            const username = document.getElementById('signup-username').value.trim();
+            const email = document.getElementById('signup-email').value.trim();
+            const password = document.getElementById('signup-password').value;
+            const errorEl = document.getElementById('signup-error');
+            const successEl = document.getElementById('signup-success');
+
+            errorEl.classList.add('hidden');
+            successEl.classList.add('hidden');
+
+            if (!username || !email || !password) {
+                errorEl.textContent = 'ERROR: ALL FIELDS REQUIRED';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+            if (password.length < 4) {
+                errorEl.textContent = 'ERROR: PASSWORD TOO SHORT (MIN 4)';
+                errorEl.classList.remove('hidden');
+                return;
+            }
+
+            try {
+                const resp = await fetch(`${API_BASE}/auth/signup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: username.toLowerCase(), email, password })
+                });
+                const data = await resp.json();
+
+                if (!resp.ok) {
+                    errorEl.textContent = `ERROR: ${data.error.toUpperCase()}`;
+                    errorEl.classList.remove('hidden');
+                    return;
+                }
+
+                successEl.textContent = 'ACCOUNT CREATED! SWITCHING TO LOGIN...';
+                successEl.classList.remove('hidden');
+                setTimeout(() => {
+                    showTab('login');
+                    document.getElementById('login-username').value = username;
+                }, 1500);
+            } catch (err) {
+                errorEl.textContent = 'ERROR: SERVER OFFLINE. START BACKEND FIRST.';
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function handleGuest() {
+            const guestUser = { id: null, username: null, is_guest: true, session_id: 'guest-' + Date.now() };
+            localStorage.setItem('thirdplace_user', JSON.stringify(guestUser));
+            window.location.href = 'index.html';
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('login-password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+        document.getElementById('signup-password').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') handleSignup();
+        });
+
+        // If already logged in, redirect
+        const existingUser = localStorage.getItem('thirdplace_user');
+        if (existingUser) {
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
