@@ -1,5 +1,6 @@
 import { MapPin, Heart, Coffee, BookOpen, Search } from 'lucide-react';
 import { useMap } from '../context/MapContext';
+import { useAuth } from '../context/AuthContext';
 
 export function NearbyList() {
   const {
@@ -13,6 +14,7 @@ export function NearbyList() {
     error,
     hasSearched,
   } = useMap();
+  const { user } = useAuth();
 
   return (
     <div className="h-full w-full bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
@@ -87,7 +89,7 @@ export function NearbyList() {
                     </div>
                   </div>
                   <button
-                    onClick={(e) => { e.stopPropagation(); toggleFavorite(venue.id); }}
+                    onClick={(e) => { e.stopPropagation(); toggleFavorite(venue.id, user?.id, user?.is_guest); }}
                     className="flex-shrink-0 p-1"
                   >
                     <Heart className={`h-3.5 w-3.5 ${favorites.has(venue.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />

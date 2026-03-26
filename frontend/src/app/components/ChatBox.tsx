@@ -19,7 +19,7 @@ const QUESTIONS = [
   { id: "caffeine", text: "CAFFEINE REQUIREMENTS?", options: ["SPECIALTY COFFEE", "ANY CAFFEINE", "JUST A TABLE", "FOOD IS PRIORITY"] },
 ];
 
-const API_BASE = "http://127.0.0.1:3000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
 export function ChatBox() {
   const { triggerFetch } = useMap();
@@ -82,12 +82,25 @@ export function ChatBox() {
 
   const sendToGemini = async (message: string, reset = false) => {
     setIsLoading(true);
+    const body = JSON.stringify({ message, reset });
+    const url = `${API_BASE}/api/chat`;
     try {
-      const res = await fetch(`${API_BASE}/api/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, reset }),
-      });
+      let res: Response | null = null;
+      let lastNetworkError: unknown = null;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body,
+          });
+          break;
+        } catch (e) {
+          lastNetworkError = e;
+          if (attempt === 0) await new Promise((r) => setTimeout(r, 700));
+        }
+      }
+      if (!res) throw lastNetworkError;
       const data = await res.json();
       addMessage(data.response || data.error || "ERROR: NO RESPONSE", "ai");
     } catch {

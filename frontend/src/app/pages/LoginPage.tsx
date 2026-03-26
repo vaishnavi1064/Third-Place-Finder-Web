@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Eye, EyeOff, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router';
+import { useAuth } from '../context/AuthContext';
 
 interface FormData {
   name: string;
@@ -26,7 +27,10 @@ export function LoginPage() {
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [authError, setAuthError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const { login, signup } = useAuth();
 
   // 10 custom masonry photos — served from public/masonry/
   const masonryImages = useMemo(() => {
@@ -66,7 +70,7 @@ export function LoginPage() {
   const validateStep = (): boolean => {
     const newErrors: FormErrors = {};
     if (isLogin) {
-      if (!formData.email.trim()) newErrors.email = 'Email is required';
+      if (!formData.email.trim()) newErrors.email = 'Username or email is required';
       if (!formData.password) newErrors.password = 'Password is required';
     } else {
       if (step === 1 && !formData.name.trim()) newErrors.name = 'Please tell us your name';
@@ -77,28 +81,37 @@ export function LoginPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleNextStep = (e: React.FormEvent) => {
+  const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep()) {
-      if (step < 3) {
-        setStep(step + 1);
-      } else {
-        navigate('/');
-      }
+    if (!validateStep()) return;
+    if (step < 3) {
+      setStep(step + 1);
+      return;
     }
+    setAuthError('');
+    setIsSubmitting(true);
+    const result = await signup(formData.name.trim(), formData.email.trim(), formData.password);
+    setIsSubmitting(false);
+    if (result.success) navigate('/');
+    else setAuthError(result.error || 'Signup failed');
   };
 
-  const handleLoginSubmit = (e: React.FormEvent) => {
+  const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validateStep()) {
-      navigate('/');
-    }
+    if (!validateStep()) return;
+    setAuthError('');
+    setIsSubmitting(true);
+    const result = await login(formData.email.trim(), formData.password);
+    setIsSubmitting(false);
+    if (result.success) navigate('/');
+    else setAuthError(result.error || 'Login failed');
   };
 
   const toggleMode = () => {
     setIsLogin(!isLogin);
     setStep(1);
     setErrors({});
+    setAuthError('');
     setFormData({ name: '', email: '', password: '' });
   };
 
@@ -144,14 +157,15 @@ export function LoginPage() {
 
               <form onSubmit={handleLoginSubmit} className="space-y-4 flex flex-col flex-1" noValidate>
                 <div className="relative border border-gray-300 rounded-2xl px-4 pt-6 pb-2 focus-within:ring-2 focus-within:ring-violet-500 focus-within:border-violet-500 transition-all bg-white shadow-sm">
-                  <label className="absolute left-4 top-2 text-[11px] text-gray-500 font-medium tracking-wide pointer-events-none">Email</label>
+                  <label className="absolute left-4 top-2 text-[11px] text-gray-500 font-medium tracking-wide pointer-events-none">Username or email</label>
                   <input
-                    type="email"
+                    type="text"
                     name="email"
+                    autoComplete="username"
                     value={formData.email}
                     onChange={handleInputChange}
                     className="w-full outline-none bg-transparent text-gray-900 placeholder-transparent text-base"
-                    placeholder="Email"
+                    placeholder="Username or email"
                   />
                 </div>
                 {errors.email && <p className="text-red-500 text-xs font-semibold ml-2">{errors.email}</p>}
@@ -161,6 +175,7 @@ export function LoginPage() {
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"
+                    autoComplete="current-password"
                     value={formData.password}
                     onChange={handleInputChange}
                     className="w-full outline-none bg-transparent text-gray-900 placeholder-transparent text-base pr-8"
@@ -175,13 +190,15 @@ export function LoginPage() {
                   </button>
                 </div>
                 {errors.password && <p className="text-red-500 text-xs font-semibold ml-2">{errors.password}</p>}
+                {authError && <p className="text-red-500 text-sm font-semibold text-center">{authError}</p>}
 
                 <div className="mt-8">
                   <button
                     type="submit"
-                    className="w-full flex justify-center py-4 px-4 rounded-full shadow-md text-base font-semibold text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transition-all focus:ring-4 focus:ring-violet-200"
+                    disabled={isSubmitting}
+                    className="w-full flex justify-center py-4 px-4 rounded-full shadow-md text-base font-semibold text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transition-all focus:ring-4 focus:ring-violet-200 disabled:opacity-60"
                   >
-                    Log In
+                    {isSubmitting ? 'Signing in…' : 'Log In'}
                   </button>
                 </div>
               </form>
@@ -315,6 +332,7 @@ export function LoginPage() {
                       <span className="w-2 h-2 rounded-full bg-violet-600" />
                     </div>
 
+                    {authError && <p className="text-red-500 text-sm font-semibold text-center mb-2">{authError}</p>}
                     <div className="mt-auto pt-4 flex gap-3">
                       <button
                         type="button"
@@ -325,9 +343,10 @@ export function LoginPage() {
                       </button>
                       <button
                         type="submit"
-                        className="flex-1 flex justify-center py-4 px-4 rounded-full shadow-md text-base font-semibold text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transition-all focus:outline-none focus:ring-4 focus:ring-violet-200"
+                        disabled={isSubmitting}
+                        className="flex-1 flex justify-center py-4 px-4 rounded-full shadow-md text-base font-semibold text-white bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600 transition-all focus:outline-none focus:ring-4 focus:ring-violet-200 disabled:opacity-60"
                       >
-                        Sign Up
+                        {isSubmitting ? 'Creating account…' : 'Sign Up'}
                       </button>
                     </div>
                   </form>

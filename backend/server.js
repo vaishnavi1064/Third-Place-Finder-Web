@@ -1,11 +1,13 @@
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bcrypt = require('bcrypt');
 const { v4: uuidv4 } = require('uuid');
 const Groq = require('groq-sdk');
 
-dotenv.config();
+// Always load .env from the backend folder (works even if Node is started from repo root)
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // --- MySQL setup ---
 const mysql = require('mysql2/promise');
@@ -18,6 +20,18 @@ const pool = mysql.createPool({
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0
+});
+
+pool.on('error', (err) => {
+    console.error('[DB] Pool error (server stays up; will retry on next query):', err.code || err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+    console.error('[SYS] Unhandled promise rejection:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('[SYS] Uncaught exception:', err);
+    process.exit(1);
 });
 
 async function testConnection() {
@@ -33,7 +47,7 @@ async function testConnection() {
 }
 
 const app = express();
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
@@ -41,7 +55,9 @@ const PORT = process.env.PORT || 3000;
 // ═══════════════════════════════════════════
 // GROQ AI SETUP (from Vaishnavi's branch)
 // ═══════════════════════════════════════════
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = process.env.GROQ_API_KEY
+    ? new Groq({ apiKey: process.env.GROQ_API_KEY })
+    : null;
 const groqModel = "llama-3.3-70b-versatile";
 const systemInstruction = "You are 'THIRD_PLACE.EXE' — a retro terminal AI assistant. Your PRIMARY mission is helping users find coffee shops, cafes, libraries, and study spots. But you are also a fully capable general assistant: you can answer questions about this app/platform, study-related questions, and general knowledge questions. Always respond in short, punchy, retro terminal uppercase style. Be robotic but genuinely helpful. Keep responses concise — 2-4 sentences max unless a detailed answer is needed.";
 
@@ -79,6 +95,11 @@ app.get('/api/health', async (req, res) => {
 // ═══════════════════════════════════════════
 app.post('/api/chat', async (req, res) => {
     try {
+        if (!groq) {
+            return res.status(503).json({
+                error: 'COMMLINK OFFLINE. SET VARIABLE GROQ_API_KEY IN backend/.env AND RESTART THE SERVER.'
+            });
+        }
         const { message, reset } = req.body;
         if (reset || chatHistory.length === 0) {
             chatHistory = [{ role: "system", content: systemInstruction }];
@@ -154,6 +175,22 @@ app.post('/api/recommend', async (req, res) => {
 Here are ${rawPlaces.length} nearby places:\n${placeList}\n
 Pick the TOP 10 that BEST match the user preferences. Return ONLY a valid JSON array with fields: index, noise, outlets, why.`;
 
+        if (!groq) {
+            const fallback = rawPlaces.slice(0, 10).map((p) => ({
+                id: `geo-${p.index}-${p.name}`,
+                name: p.name,
+                coords: p.coords,
+                noise: 'N/A',
+                outlets: 'N/A',
+                distance: `${Math.floor(Math.random() * 15) + 3} MIN`,
+                reason: (p.category.split(',')[0] || 'PLACE').toUpperCase().replace(/CATERING\.|LEISURE\.|OFFICE\./g, ''),
+                rating: p.tags?.stars || 'N/A',
+                address: p.address,
+                why: 'NEARBY RESULT (ADD GROQ_API_KEY FOR AI RANKING).'
+            }));
+            return res.json(fallback);
+        }
+
         const groqResult = await withRetry(() => groq.chat.completions.create({
             model: groqModel,
             messages: [{ role: "user", content: prompt }]
@@ -216,7 +253,11 @@ app.post('/api/auth/login', async (req, res) => {
         const { username, password } = req.body;
         if (!username || !password)
             return res.status(400).json({ error: 'username and password are required' });
-        const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username.toLowerCase()]);
+        const ident = String(username).trim().toLowerCase();
+        const [rows] = await pool.query(
+            'SELECT * FROM users WHERE username = ? OR LOWER(email) = ?',
+            [ident, ident]
+        );
         if (rows.length === 0) return res.status(401).json({ error: 'Invalid username or password' });
         const user = rows[0];
         const match = await bcrypt.compare(password, user.password_hash);
@@ -256,6 +297,32 @@ app.get('/api/auth/me/:session_id', async (req, res) => {
 // ═══════════════════════════════════════════
 // PLACES (MySQL)
 // ═══════════════════════════════════════════
+
+// Upsert a place by name — used when saving AI-recommended venues as favorites
+app.post('/api/places/upsert', async (req, res) => {
+    try {
+        const { name, address, latitude, longitude, category, noise_level } = req.body;
+        if (!name) return res.status(400).json({ error: 'name is required' });
+
+        // Return existing place if name matches
+        const [existing] = await pool.query('SELECT id FROM places WHERE name = ?', [name]);
+        if (existing.length > 0) return res.json({ id: existing[0].id });
+
+        // Insert new place with safe defaults
+        const cat = ['cafe','library','coworking'].includes(category) ? category : 'cafe';
+        const noise = ['silent','quiet','moderate','lively'].includes(noise_level) ? noise_level : 'moderate';
+        const [result] = await pool.query(
+            `INSERT INTO places (name, category, address, latitude, longitude, noise_level, has_outlets, has_wifi, serves_coffee, group_friendly)
+             VALUES (?, ?, ?, ?, ?, ?, TRUE, TRUE, TRUE, TRUE)`,
+            [name, cat, address || '', parseFloat(latitude) || 0, parseFloat(longitude) || 0, noise]
+        );
+        res.json({ id: result.insertId });
+    } catch (err) {
+        console.error('Upsert place error:', err);
+        res.status(500).json({ error: 'Failed to upsert place' });
+    }
+});
+
 app.get('/api/places', async (req, res) => {
     try {
         const { category, noise_level, has_outlets, serves_coffee, group_friendly } = req.query;
@@ -377,10 +444,19 @@ app.post('/api/reviews', async (req, res) => {
 // ═══════════════════════════════════════════
 // START SERVER
 // ═══════════════════════════════════════════
-app.listen(PORT, async () => {
+const server = app.listen(PORT, async () => {
     console.log(`[SYS] 🚀 Server running on http://localhost:${PORT}`);
     console.log(`[SYS] Groq API: ${process.env.GROQ_API_KEY ? 'YES' : 'NO'}`);
     console.log(`[SYS] Geoapify API: ${process.env.GEOAPIFY_API_KEY ? 'YES' : 'NO'}`);
     await testConnection();
     console.log('\n[SYS] Demo accounts: shravani/demo1234, aangi/demo1234, Guest mode');
+});
+
+server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+        console.error(`[SYS] Port ${PORT} is already in use. Stop the other Node process or set PORT in backend/.env`);
+    } else {
+        console.error('[SYS] HTTP server error:', err.message);
+    }
+    process.exit(1);
 });

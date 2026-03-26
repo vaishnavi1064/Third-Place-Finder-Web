@@ -19,7 +19,9 @@ interface MapContextType {
   selectedVenue: Venue | null;
   setSelectedVenue: (v: Venue | null) => void;
   favorites: Set<string | number>;
-  toggleFavorite: (id: string | number) => void;
+  toggleFavorite: (id: string | number, userId?: number | null, isGuest?: boolean) => void;
+  loadUserFavorites: (userId: number) => void;
+  clearFavorites: () => void;
   flyTo: [number, number] | null;
   setFlyTo: (coords: [number, number] | null) => void;
   userLocation: [number, number] | null;
@@ -36,12 +38,13 @@ interface MapContextType {
 
 const MapContext = createContext<MapContextType | null>(null);
 
-const API_BASE = 'http://127.0.0.1:3000';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function MapProvider({ children }: { children: ReactNode }) {
   const [venues, setVenues] = useState<Venue[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [favorites, setFavorites] = useState<Set<string | number>>(new Set());
+  const [favPlaceIds, setFavPlaceIds] = useState<Map<string | number, number>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
   const [showOnlyFavorites, setShowOnlyFavorites] = useState(false);
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -50,6 +53,24 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const locationRef = useRef<[number, number] | null>(null);
+
+  const loadUserFavorites = useCallback((userId: number) => {
+    fetch(`${API_BASE}/api/favorites/${userId}`)
+      .then(r => r.json())
+      .then(data => {
+        const favs = data.favorites || [];
+        const ids = new Set<string | number>(favs.map((f: any) => f.id));
+        const pidMap = new Map<string | number, number>(favs.map((f: any) => [f.id, f.id]));
+        setFavorites(ids);
+        setFavPlaceIds(pidMap);
+      })
+      .catch(() => {});
+  }, []);
+
+  const clearFavorites = useCallback(() => {
+    setFavorites(new Set());
+    setFavPlaceIds(new Map());
+  }, []);
 
   // Resolve user location on mount for map centering
   useEffect(() => {
@@ -94,12 +115,78 @@ export function MapProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const toggleFavorite = (id: string | number) => {
+  const toggleFavorite = async (id: string | number, userId?: number | null, isGuest?: boolean) => {
+    if (!userId || isGuest) {
+      // Guest: just toggle in memory so the heart animates
+      setFavorites(prev => {
+        const next = new Set(prev);
+        next.has(id) ? next.delete(id) : next.add(id);
+        return next;
+      });
+      return;
+    }
+
+    const isCurrentlyFav = favorites.has(id);
+
+    // Optimistic UI update
     setFavorites(prev => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      isCurrentlyFav ? next.delete(id) : next.add(id);
       return next;
     });
+
+    try {
+      if (isCurrentlyFav) {
+        const placeId = favPlaceIds.get(id) ?? id;
+        await fetch(`${API_BASE}/api/favorites/${userId}/${placeId}`, { method: 'DELETE' });
+        setFavPlaceIds(prev => { const m = new Map(prev); m.delete(id); return m; });
+      } else {
+        const venue = venues.find(v => v.id === id);
+        if (!venue) return;
+
+        // Upsert the place in DB (creates it if it's a new Geoapify venue)
+        const upsertRes = await fetch(`${API_BASE}/api/places/upsert`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: venue.name,
+            address: venue.address,
+            latitude: venue.coords[0],
+            longitude: venue.coords[1],
+            category: venue.reason?.toLowerCase().includes('library') ? 'library'
+              : venue.reason?.toLowerCase().includes('cowork') ? 'coworking' : 'cafe',
+            noise_level: venue.noise?.toLowerCase().includes('silent') ? 'silent'
+              : venue.noise?.toLowerCase().includes('quiet') ? 'quiet'
+              : venue.noise?.toLowerCase().includes('lively') ? 'lively' : 'moderate',
+          }),
+        });
+
+        if (!upsertRes.ok) {
+          setFavorites(prev => { const next = new Set(prev); next.delete(id); return next; });
+          return;
+        }
+
+        const { id: placeDbId } = await upsertRes.json();
+
+        const res = await fetch(`${API_BASE}/api/favorites`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: userId, place_id: placeDbId }),
+        });
+        if (res.ok) {
+          setFavPlaceIds(prev => new Map(prev).set(id, placeDbId));
+        } else {
+          setFavorites(prev => { const next = new Set(prev); next.delete(id); return next; });
+        }
+      }
+    } catch {
+      // Revert optimistic update on network error
+      setFavorites(prev => {
+        const next = new Set(prev);
+        isCurrentlyFav ? next.add(id) : next.delete(id);
+        return next;
+      });
+    }
   };
 
   const routeToVenue = (venue: Venue) => {
@@ -117,7 +204,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
   return (
     <MapContext.Provider value={{
       venues, filteredVenues, selectedVenue, setSelectedVenue,
-      favorites, toggleFavorite, flyTo, setFlyTo, userLocation,
+      favorites, toggleFavorite, loadUserFavorites, clearFavorites,
+      flyTo, setFlyTo, userLocation,
       isLoading, error, searchQuery, setSearchQuery,
       showOnlyFavorites, setShowOnlyFavorites, routeToVenue,
       triggerFetch, hasSearched,

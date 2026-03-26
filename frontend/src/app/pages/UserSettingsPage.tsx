@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, User, Bell, MapPin, Heart, Settings, LogOut } from 'lucide-react';
 import { Button } from '../components/ui/button';
@@ -7,19 +7,37 @@ import { Label } from '../components/ui/label';
 import { Switch } from '../components/ui/switch';
 import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import { useAuth } from '../context/AuthContext';
+
+const API_BASE = 'http://localhost:3000/api';
+
+interface Favorite {
+  favorite_id: number;
+  name: string;
+  category: string;
+  address: string;
+}
 
 export function UserSettingsPage() {
   const navigate = useNavigate();
-  const [user] = useState({
-    name: 'Alex Chen',
-    email: 'alex@example.com',
-    avatar: '',
-  });
+  const { user: authUser, logout } = useAuth();
 
-  const [favorites] = useState([
-    { id: 1, name: 'Cozy Coffee Shop', type: 'Cafe', distance: '0.3 mi' },
-    { id: 3, name: 'Central Park', type: 'Park', distance: '1.2 mi' },
-  ]);
+  const displayName = authUser?.username || 'User';
+  const displayEmail = authUser?.email || '';
+  const initials = displayName.slice(0, 2).toUpperCase();
+
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
+  const [favLoading, setFavLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authUser?.id || authUser.is_guest) return;
+    setFavLoading(true);
+    fetch(`${API_BASE}/favorites/${authUser.id}`)
+      .then(r => r.json())
+      .then(data => setFavorites(data.favorites || []))
+      .catch(() => setFavorites([]))
+      .finally(() => setFavLoading(false));
+  }, [authUser?.id]);
 
   const [notifications, setNotifications] = useState(true);
   const [locationSharing, setLocationSharing] = useState(true);
@@ -48,14 +66,14 @@ export function UserSettingsPage() {
           <div className="bg-gradient-to-r from-violet-500 to-blue-500 p-8 text-white">
             <div className="flex items-center gap-4">
               <Avatar className="h-20 w-20 border-4 border-white/30">
-                <AvatarImage src={user.avatar} />
+                <AvatarImage src="" />
                 <AvatarFallback className="bg-white/20 text-2xl">
-                  {user.name.split(' ').map(n => n[0]).join('')}
+                  {initials}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <h1 className="text-3xl font-semibold tracking-tight">{user.name}</h1>
-                <p className="text-white/80 text-sm mt-1">{user.email}</p>
+                <h1 className="text-3xl font-semibold tracking-tight">@{displayName}</h1>
+                <p className="text-white/80 text-sm mt-1">{displayEmail}</p>
               </div>
             </div>
           </div>
@@ -82,12 +100,13 @@ export function UserSettingsPage() {
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name" className="text-slate-700 dark:text-slate-300">
-                    Full Name
+                    Username
                   </Label>
                   <Input
                     id="name"
-                    defaultValue={user.name}
-                    className="bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700"
+                    defaultValue={displayName}
+                    readOnly
+                    className="bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 opacity-70 cursor-not-allowed"
                   />
                 </div>
                 <div className="space-y-2">
@@ -97,8 +116,9 @@ export function UserSettingsPage() {
                   <Input
                     id="email"
                     type="email"
-                    defaultValue={user.email}
-                    className="bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700"
+                    defaultValue={displayEmail}
+                    readOnly
+                    className="bg-white/60 dark:bg-slate-900/60 border-slate-200 dark:border-slate-700 opacity-70 cursor-not-allowed"
                   />
                 </div>
                 <div className="space-y-2">
@@ -119,11 +139,18 @@ export function UserSettingsPage() {
 
             {/* Favorites Tab */}
             <TabsContent value="favorites" className="space-y-4">
-              {favorites.length > 0 ? (
+              {favLoading ? (
+                <div className="text-center py-12 text-slate-500">Loading favorites…</div>
+              ) : authUser?.is_guest ? (
+                <div className="text-center py-12 text-slate-600 dark:text-slate-400">
+                  <Heart className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                  <p>Sign up to save favorite places</p>
+                </div>
+              ) : favorites.length > 0 ? (
                 <div className="space-y-3">
                   {favorites.map((place) => (
                     <div
-                      key={place.id}
+                      key={place.favorite_id}
                       className="flex items-center justify-between p-4 bg-white/60 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow"
                     >
                       <div className="flex items-center gap-3">
@@ -135,7 +162,7 @@ export function UserSettingsPage() {
                             {place.name}
                           </h4>
                           <p className="text-xs text-slate-600 dark:text-slate-400">
-                            {place.type} • {place.distance}
+                            {place.category} • {place.address}
                           </p>
                         </div>
                       </div>
@@ -189,6 +216,7 @@ export function UserSettingsPage() {
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-700">
                   <Button
                     variant="outline"
+                    onClick={() => { logout(); navigate('/login'); }}
                     className="w-full text-red-600 border-red-200 hover:bg-red-50 dark:text-red-400 dark:border-red-900/50 dark:hover:bg-red-900/20"
                   >
                     <LogOut className="h-4 w-4 mr-2" />

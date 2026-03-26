@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { useMap } from '../context/MapContext';
+import { useAuth } from '../context/AuthContext';
 
 const venueIcon = new L.DivIcon({
   className: '',
@@ -51,6 +52,7 @@ export function MapWindow() {
     setShowOnlyFavorites,
     routeToVenue,
   } = useMap();
+  const { user } = useAuth();
 
   const mapCenter: [number, number] = [47.615, -122.33];
 
@@ -85,7 +87,7 @@ export function MapWindow() {
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{selectedVenue.address || selectedVenue.reason}</p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
-                <button onClick={() => toggleFavorite(selectedVenue.id)} className="p-1.5">
+                <button onClick={() => toggleFavorite(selectedVenue.id, user?.id, user?.is_guest)} className="p-1.5">
                   <Heart className={`h-4 w-4 ${favorites.has(selectedVenue.id) ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
                 </button>
                 <button onClick={() => setSelectedVenue(null)} className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">

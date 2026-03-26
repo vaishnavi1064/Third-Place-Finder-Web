@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Header } from '../components/Header';
 import { ChatBox } from '../components/ChatBox';
 import { MapWindow } from '../components/MapWindow';
@@ -5,7 +6,18 @@ import { NearbyList } from '../components/NearbyList';
 import { AudioMixer } from '../components/AudioMixer';
 import { PomodoroTimer } from '../components/PomodoroTimer';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { MapProvider } from '../context/MapContext';
+import { MapProvider, useMap } from '../context/MapContext';
+import { useAuth } from '../context/AuthContext';
+
+function FavoritesSync() {
+  const { user } = useAuth();
+  const { loadUserFavorites, clearFavorites } = useMap();
+  useEffect(() => {
+    if (user?.id && !user.is_guest) loadUserFavorites(user.id);
+    else clearFavorites();
+  }, [user?.id, user?.is_guest]);
+  return null;
+}
 
 export function MainLayout() {
   return (
@@ -16,6 +28,7 @@ export function MainLayout() {
       {/* Main Content with Resizable Panels */}
       <div className="flex-1 overflow-hidden">
         <MapProvider>
+          <FavoritesSync />
           <PanelGroup direction="horizontal">
             {/* Left Column - Chat */}
             <Panel defaultSize={20} minSize={15} maxSize={30}>
