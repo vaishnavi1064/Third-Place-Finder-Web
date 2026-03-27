@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { useAuth } from '../context/AuthContext';
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3000') + '/api';
 
 interface Favorite {
   favorite_id: number;
