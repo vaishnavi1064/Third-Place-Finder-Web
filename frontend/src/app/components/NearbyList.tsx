@@ -13,6 +13,7 @@ export function NearbyList() {
     isLoading,
     error,
     hasSearched,
+    showOnlyFavorites,
   } = useMap();
   const { user } = useAuth();
 
@@ -24,7 +25,7 @@ export function NearbyList() {
           <MapPin className="h-4 w-4 text-violet-600 dark:text-violet-400" />
           Nearby Third Places
           <span className="text-xs font-normal text-slate-500">
-            {isLoading ? 'Scanning...' : error ? '⚠️ Error' : hasSearched ? `(${filteredVenues.length})` : ''}
+            {isLoading ? 'Scanning...' : error ? '⚠️ Error' : (hasSearched || showOnlyFavorites) ? `(${filteredVenues.length})` : ''}
           </span>
         </h3>
       </div>
@@ -32,7 +33,7 @@ export function NearbyList() {
       {/* Body */}
       <div className="flex-1 overflow-y-auto p-2">
         {/* Not yet searched — show waiting state */}
-        {!hasSearched && !isLoading && (
+        {!hasSearched && !showOnlyFavorites && !isLoading && (
           <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6 py-8">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 dark:from-violet-900/40 dark:to-blue-900/40 flex items-center justify-center">
               <Search className="h-5 w-5 text-violet-500 dark:text-violet-400" />
@@ -58,7 +59,7 @@ export function NearbyList() {
         {error && <p className="text-xs text-red-500 p-2">{error}</p>}
 
         {/* Results */}
-        {hasSearched && !isLoading && (
+        {(hasSearched || showOnlyFavorites) && !isLoading && (
           <div className="space-y-1.5">
             {filteredVenues.map((venue) => (
               <div

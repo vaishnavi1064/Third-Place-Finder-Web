@@ -42,6 +42,7 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export function MapProvider({ children }: { children: ReactNode }) {
   const [venues, setVenues] = useState<Venue[]>([]);
+  const [favoriteVenues, setFavoriteVenues] = useState<Venue[]>([]);
   const [selectedVenue, setSelectedVenue] = useState<Venue | null>(null);
   const [favorites, setFavorites] = useState<Set<string | number>>(new Set());
   const [favPlaceIds, setFavPlaceIds] = useState<Map<string | number, number>>(new Map());
@@ -61,14 +62,26 @@ export function MapProvider({ children }: { children: ReactNode }) {
         const favs = data.favorites || [];
         const ids = new Set<string | number>();
         const pidMap = new Map<string | number, number>();
+        const venueList: Venue[] = [];
         favs.forEach((f: any) => {
-          // Use external_id (venue string id) if available, otherwise fall back to db id
           const venueKey = f.external_id || f.id;
           ids.add(venueKey);
           pidMap.set(venueKey, f.id);
+          venueList.push({
+            id: venueKey,
+            name: f.name,
+            coords: [parseFloat(f.latitude) || 0, parseFloat(f.longitude) || 0],
+            noise: f.noise_level || 'moderate',
+            outlets: f.has_outlets ? 'Yes' : 'No',
+            distance: '',
+            reason: f.category || 'cafe',
+            rating: f.avg_rating || 0,
+            address: f.address || '',
+          });
         });
         setFavorites(ids);
         setFavPlaceIds(pidMap);
+        setFavoriteVenues(venueList);
       })
       .catch(() => {});
   }, []);
@@ -76,6 +89,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const clearFavorites = useCallback(() => {
     setFavorites(new Set());
     setFavPlaceIds(new Map());
+    setFavoriteVenues([]);
   }, []);
 
   // Resolve user location on mount for map centering
@@ -146,6 +160,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
         const placeId = favPlaceIds.get(id) ?? id;
         await fetch(`${API_BASE}/api/favorites/${userId}/${placeId}`, { method: 'DELETE' });
         setFavPlaceIds(prev => { const m = new Map(prev); m.delete(id); return m; });
+        setFavoriteVenues(prev => prev.filter(v => v.id !== id));
       } else {
         const venue = venues.find(v => v.id === id);
         if (!venue) return;
@@ -182,6 +197,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
         });
         if (res.ok) {
           setFavPlaceIds(prev => new Map(prev).set(id, placeDbId));
+          if (venue) setFavoriteVenues(prev => prev.some(v => v.id === id) ? prev : [...prev, venue]);
         } else {
           setFavorites(prev => { const next = new Set(prev); next.delete(id); return next; });
         }
@@ -202,7 +218,9 @@ export function MapProvider({ children }: { children: ReactNode }) {
     window.open(`https://www.google.com/maps/dir/${origin}/${lat},${lon}/`, '_blank');
   };
 
-  const filteredVenues = venues.filter(v => {
+  // When "Favorites only" is on with no search results, show saved favorites directly from DB
+  const baseVenues = (showOnlyFavorites && !hasSearched) ? favoriteVenues : venues;
+  const filteredVenues = baseVenues.filter(v => {
     const matchSearch = !searchQuery || v.name.toLowerCase().includes(searchQuery.toLowerCase()) || v.reason.toLowerCase().includes(searchQuery.toLowerCase());
     const matchFav = !showOnlyFavorites || favorites.has(v.id);
     return matchSearch && matchFav;
