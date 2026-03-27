@@ -30,7 +30,12 @@ export function LoginPage() {
   const [authError, setAuthError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
-  const { login, signup } = useAuth();
+  const { login, signup, guestLogin } = useAuth();
+
+  const handleGuestLogin = async () => {
+    await guestLogin();
+    navigate('/');
+  };
 
   // 10 custom masonry photos — served from public/masonry/
   const masonryImages = useMemo(() => {
@@ -137,7 +142,18 @@ export function LoginPage() {
       </div>
 
       {/* ── Centered Modal ── */}
-      <div className="relative z-20 w-full max-w-[480px] min-h-[500px] bg-white rounded-[2rem] shadow-2xl p-10 flex flex-col justify-between m-4 border border-gray-100">
+      <div className="relative z-20 w-full max-w-[480px] min-h-[500px] bg-white rounded-[2rem] shadow-2xl p-10 pt-12 flex flex-col justify-between m-4 border border-gray-100">
+
+        {/* Back arrow */}
+        <button
+          onClick={() => navigate('/')}
+          className="absolute top-6 left-6 flex items-center gap-1 text-gray-400 hover:text-gray-700 transition-colors text-sm font-medium"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
 
         {/* Logo */}
         <div className="flex justify-center mb-8">
@@ -364,6 +380,10 @@ export function LoginPage() {
             {isLogin ? 'Are you new to Third Place Finder? ' : 'Already have an account? '}
             <button onClick={toggleMode} className="text-violet-600 hover:text-violet-800 underline transition-colors">
               {isLogin ? 'Sign up' : 'Log in instead'}
+            </button>
+            {' or '}
+            <button onClick={handleGuestLogin} className="text-gray-500 hover:text-gray-800 underline transition-colors">
+              Guest login
             </button>
           </p>
         </div>
