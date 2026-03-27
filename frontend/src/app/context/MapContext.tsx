@@ -59,8 +59,14 @@ export function MapProvider({ children }: { children: ReactNode }) {
       .then(r => r.json())
       .then(data => {
         const favs = data.favorites || [];
-        const ids = new Set<string | number>(favs.map((f: any) => f.id));
-        const pidMap = new Map<string | number, number>(favs.map((f: any) => [f.id, f.id]));
+        const ids = new Set<string | number>();
+        const pidMap = new Map<string | number, number>();
+        favs.forEach((f: any) => {
+          // Use external_id (venue string id) if available, otherwise fall back to db id
+          const venueKey = f.external_id || f.id;
+          ids.add(venueKey);
+          pidMap.set(venueKey, f.id);
+        });
         setFavorites(ids);
         setFavPlaceIds(pidMap);
       })
@@ -153,6 +159,7 @@ export function MapProvider({ children }: { children: ReactNode }) {
             address: venue.address,
             latitude: venue.coords[0],
             longitude: venue.coords[1],
+            external_id: String(id),
             category: venue.reason?.toLowerCase().includes('library') ? 'library'
               : venue.reason?.toLowerCase().includes('cowork') ? 'coworking' : 'cafe',
             noise_level: venue.noise?.toLowerCase().includes('silent') ? 'silent'

@@ -306,22 +306,22 @@ app.get('/api/auth/me/:session_id', async (req, res) => {
 // Upsert a place by name — used when saving AI-recommended venues as favorites
 app.post('/api/places/upsert', async (req, res) => {
     try {
-        const { name, address, latitude, longitude, category, noise_level } = req.body;
+        const { name, address, latitude, longitude, category, noise_level, external_id } = req.body;
         if (!name) return res.status(400).json({ error: 'name is required' });
 
         // Return existing place if name matches
-        const [existing] = await pool.query('SELECT id FROM places WHERE name = ?', [name]);
-        if (existing.length > 0) return res.json({ id: existing[0].id });
+        const [existing] = await pool.query('SELECT id, external_id FROM places WHERE name = ?', [name]);
+        if (existing.length > 0) return res.json({ id: existing[0].id, external_id: existing[0].external_id });
 
         // Insert new place with safe defaults
         const cat = ['cafe','library','coworking'].includes(category) ? category : 'cafe';
         const noise = ['silent','quiet','moderate','lively'].includes(noise_level) ? noise_level : 'moderate';
         const [result] = await pool.query(
-            `INSERT INTO places (name, category, address, latitude, longitude, noise_level, has_outlets, has_wifi, serves_coffee, group_friendly)
-             VALUES (?, ?, ?, ?, ?, ?, TRUE, TRUE, TRUE, TRUE)`,
-            [name, cat, address || '', parseFloat(latitude) || 0, parseFloat(longitude) || 0, noise]
+            `INSERT INTO places (name, category, address, latitude, longitude, noise_level, has_outlets, has_wifi, serves_coffee, group_friendly, external_id)
+             VALUES (?, ?, ?, ?, ?, ?, TRUE, TRUE, TRUE, TRUE, ?)`,
+            [name, cat, address || '', parseFloat(latitude) || 0, parseFloat(longitude) || 0, noise, external_id || null]
         );
-        res.json({ id: result.insertId });
+        res.json({ id: result.insertId, external_id: external_id || null });
     } catch (err) {
         console.error('Upsert place error:', err);
         res.status(500).json({ error: 'Failed to upsert place' });

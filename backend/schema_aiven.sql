@@ -1,15 +1,3 @@
--- ============================================
--- Third Place Finder - MySQL Database Schema
--- ============================================
-
-CREATE DATABASE IF NOT EXISTS third_place_finder;
-USE third_place_finder;
-
--- -------------------------------------------
--- 1. USERS - Guest vs Registered
---    Guests: is_guest=TRUE, no favorites
---    Registered: is_guest=FALSE, can save favs
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     username        VARCHAR(100) UNIQUE,
@@ -21,9 +9,6 @@ CREATE TABLE IF NOT EXISTS users (
     last_active     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- -------------------------------------------
--- 2. PLACES - Cafes, Libraries, Coworking
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS places (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(255) NOT NULL,
@@ -45,23 +30,16 @@ CREATE TABLE IF NOT EXISTS places (
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- -------------------------------------------
--- 3. FAVORITES - Only registered users can save
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS favorites (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL,
     place_id        INT NOT NULL,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
     UNIQUE KEY unique_fav (user_id, place_id)
 );
 
--- -------------------------------------------
--- 4. USER_PREFERENCES - Onboarding answers
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS user_preferences (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL,
@@ -71,13 +49,9 @@ CREATE TABLE IF NOT EXISTS user_preferences (
     needs_outlets   BOOLEAN DEFAULT FALSE,
     needs_caffeine  BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
--- -------------------------------------------
--- 5. REVIEWS
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS reviews (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL,
@@ -85,15 +59,11 @@ CREATE TABLE IF NOT EXISTS reviews (
     rating          TINYINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment         TEXT,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (place_id) REFERENCES places(id) ON DELETE CASCADE,
     UNIQUE KEY unique_review (user_id, place_id)
 );
 
--- -------------------------------------------
--- 6. AMBIENT_PRESETS - Saved mixer configs
--- -------------------------------------------
 CREATE TABLE IF NOT EXISTS ambient_presets (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     user_id         INT NOT NULL,
@@ -104,6 +74,5 @@ CREATE TABLE IF NOT EXISTS ambient_presets (
     street_volume   DECIMAL(3, 2) DEFAULT 0.00,
     lofi_volume     DECIMAL(3, 2) DEFAULT 0.00,
     created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
