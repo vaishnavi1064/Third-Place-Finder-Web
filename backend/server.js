@@ -42,7 +42,7 @@ async function testConnection() {
         conn.release();
         return true;
     } catch (err) {
-        console.error('[DB] ❌ MySQL connection failed:', err.message);
+        console.error('[DB] ❌ MySQL connection failed:', err.message || JSON.stringify(err) || err);
         return false;
     }
 }
