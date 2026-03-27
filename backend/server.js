@@ -11,16 +11,17 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 // --- MySQL setup ---
 const mysql = require('mysql2/promise');
+const isAiven = (process.env.DB_HOST || '').includes('aivencloud.com');
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 3306,
+    port: parseInt(process.env.DB_PORT || '3306', 10),
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'third_place_finder',
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 0,
-    ssl: process.env.DB_HOST?.includes('aivencloud.com') ? { rejectUnauthorized: false } : undefined
+    ssl: isAiven ? { rejectUnauthorized: false } : undefined
 });
 
 pool.on('error', (err) => {
