@@ -12,17 +12,20 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 // --- MySQL setup ---
 const mysql = require('mysql2/promise');
 const isAiven = (process.env.DB_HOST || '').includes('aivencloud.com');
-const pool = mysql.createPool({
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306', 10),
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_NAME || 'third_place_finder',
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    ssl: isAiven ? { rejectUnauthorized: false } : undefined
-});
+const poolConfig = process.env.DB_URL
+    ? { uri: process.env.DB_URL, waitForConnections: true, connectionLimit: 10, queueLimit: 0 }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: parseInt(process.env.DB_PORT || '3306', 10),
+        user: process.env.DB_USER || 'root',
+        password: process.env.DB_PASSWORD || '',
+        database: process.env.DB_NAME || 'third_place_finder',
+        waitForConnections: true,
+        connectionLimit: 10,
+        queueLimit: 0,
+        ssl: isAiven ? { rejectUnauthorized: false } : undefined
+    };
+const pool = mysql.createPool(poolConfig);
 
 pool.on('error', (err) => {
     console.error('[DB] Pool error (server stays up; will retry on next query):', err.code || err.message);
